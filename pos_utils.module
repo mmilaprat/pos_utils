@@ -356,7 +356,7 @@ function pos_utils_views_pre_render(\Drupal\views\ViewExecutable $view) {
 								//$urlToTheNode = $node->toUrl()->toString();
 								if ($check) {
 									$urlToTheNode = $base_url."/".$langcode."/".$entity_type_id."/".$finalId."/edit?destination=".$current_uri;
-									$urlToTheNodeView = $base_url."/".$langcode."/".$entity_type_id."/".$finalId."/edit?destination=".$current_uri;
+									$urlToTheNodeView = $base_url."/".$langcode."/".$entity_type_id."/".$finalId."?destination=".$current_uri;
 								}
 								else {
 									$urlToTheNode = $base_url."/".$langcode."/".$entity_type_id."/".$finalId;
