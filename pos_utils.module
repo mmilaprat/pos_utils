@@ -7,6 +7,11 @@ use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Link; // This should be added in controller
 use Drupal\Core\Url;
 
+function pos_utils_update_projects_alter(&$projects) {
+  // Hide a site-specific module from the list.
+  unset($projects['pos_utils']);
+}
+
 
 function pos_utils_page_attachments(array &$attachments) {
 	$attachments['#attached']['library'][] = 'pos_utils/pos_utils';
@@ -306,7 +311,19 @@ function pos_utils_views_pre_render(\Drupal\views\ViewExecutable $view) {
 							if ($node->hasTranslation($langcode)) {
 		  						$translation = $node->getTranslation($langcode);
 								$itemHasTranslation = True;
-								$check = $user->hasPermission('Edit translations');
+								//$check = $user->hasPermission('Edit translations');
+								$check = content_translation_translate_access($node)->isAllowed();
+
+								//drupal_set_message("aaaa2 check=". (string) $check."-------");
+											
+											if ($check) {
+												$check = $user->hasPermission('translate '.$node->type[0]->target_id.' node');
+												//drupal_set_message("aaaa1 >".$node->type[0]->target_id."<---translate ".$node->type[0]->target_id." node check=". (string) $check."-------");
+												if (!$check) {										
+													$check = $user->hasPermission('translate any entity');
+													//drupal_set_message("translate any entity >  check=". (string) $check."-------");									
+												}
+											}
 								
 								$current_vid = $translation->get('vid')[0]->value;
 								$trans_created = $translation->get('created')[0]->value;
@@ -316,7 +333,17 @@ function pos_utils_views_pre_render(\Drupal\views\ViewExecutable $view) {
 
 							}
 							else {
-								$check = $user->hasPermission('Create translations');
+								//$check = $user->hasPermission('Create translations');
+								$check = content_translation_translate_access($node)->isAllowed();
+								
+								if ($check) {
+									$check = $user->hasPermission('translate '.$node->type[0]->target_id.' node');
+									//drupal_set_message("aaaa2 >".$node->type[0]->target_id."<---translate ".$node->type[0]->target_id." node check=". (string) $check."-------");
+									if (!$check) {										
+										$check = $user->hasPermission('translate any entity');
+										//drupal_set_message("translate any entity >  check=". (string) $check."-------");									
+									}
+								}
 							}
 						}
 						else if ($entity_type_id == 'group')  {
@@ -335,7 +362,37 @@ function pos_utils_views_pre_render(\Drupal\views\ViewExecutable $view) {
 											$nodeRevision_translation_affected = $row['content_translation_status'];
 											$nodeRevision_content_translation_outdated =  $row['content_translation_outdated'];
 											$itemHasTranslation = True;
+											/*
 											$check = $user->hasPermission('Edit translations');
+											drupal_set_message("aaaa1 Edit translations check=". (string) $check."-------");
+											*/
+											/*
+											$check = $user->hasPermission('Create translations');
+											drupal_set_message("aaaa1 Create translations check=". (string) $check."-------");
+											*/
+											$check = content_translation_translate_access($group)->isAllowed();																						
+											//drupal_set_message("aaaa2 check=". (string) $check."-------");
+											
+											if ($check) {
+												$check = $user->hasPermission('translate '.$group->type[0]->target_id.' group');
+												//drupal_set_message("aaaa1 >".$group->type[0]->target_id."<---translate ".$group->type[0]->target_id." group check=". (string) $check."-------");
+												
+												if (!$check) {										
+													$check = $user->hasPermission('translate any entity');
+													//drupal_set_message("translate any entity >  check=". (string) $check."-------");									
+												}
+											}
+											 
+											/*
+											foreach ($group->type[0]->target_id as $k=>$v) {
+												drupal_set_message("aaaa1 >k:".(string)$k."---------");
+											}
+											*/
+											/*
+											
+											*/
+											
+									
   										}
 									}
 									
@@ -345,7 +402,18 @@ function pos_utils_views_pre_render(\Drupal\views\ViewExecutable $view) {
 								catch(Exception $e) {
 									//drupal_set_message("--NO translation for gid=".$finalId."----Message:".$e->getMessage()."---");
 									$itemHasTranslation = False;
-									$check = $user->hasPermission('Create translations');
+									//$check = $user->hasPermission('Create translations');
+									$check = content_translation_translate_access($group)->isAllowed();
+									
+									if ($check) {
+												$check = $user->hasPermission('translate '.$group->type[0]->target_id.' group');
+												//drupal_set_message("aaaa1 >".$group->type[0]->target_id."<---translate ".$group->type[0]->target_id." group check=". (string) $check."-------");
+												
+												if (!$check) {										
+													$check = $user->hasPermission('translate any entity');
+													//drupal_set_message("translate any entity >  check=". (string) $check."-------");									
+												}
+											}
 								}
 							}
 							else {
@@ -496,6 +564,17 @@ function pos_utils_views_pre_render(\Drupal\views\ViewExecutable $view) {
 						else if ($linkText == "Create") {
 							$displayLink = True;
 						}
+												
+						//only if the user can edit the item (group or node), can create a translation
+						if ($displayLink) {
+							$displayLink = False;
+							if ($entity_type_id=='node') {
+								$displayLink = $node->access('update');
+							}
+							else if ($entity_type_id=='group') {
+								$displayLink = $group->access('update');
+							}
+						}						
 						
 						if (($urlToTheNode!="") && ($urlToTheNodeView!="")) {
 							if ($displayLink) {
